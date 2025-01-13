@@ -1,0 +1,4 @@
+node_modules/
+.next/
+lib/db/migrations/
+.env.local
