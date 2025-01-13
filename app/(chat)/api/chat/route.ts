@@ -111,8 +111,7 @@ export async function POST(request: Request) {
 
       const result = streamText({
         model: customModel(model.apiIdentifier),
-        system:
-          "You are a helpful assistant. Check your knowledge base before answering any questions. If you don't find any information, say 'I don't know'.",
+        system: systemPrompt,
         messages: coreMessages,
         maxSteps: 5,
         experimental_activeTools: allTools,
