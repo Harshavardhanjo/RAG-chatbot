@@ -119,10 +119,6 @@ function PureMultimodalInput({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
-  const [embeddingsQueue, setEmbeddingsQueue] = useState<
-    Array<NewResourceParams>
-  >([]);
-
   const submitForm = useCallback(() => {
     window.history.replaceState({}, "", `/chat/${chatId}`);
 
@@ -190,12 +186,6 @@ function PureMultimodalInput({
           ...currentAttachments,
           ...successfullyUploadedAttachments,
         ]);
-        setEmbeddingsQueue(
-          successfullyUploadedAttachments.map((attachment) => ({
-            content: attachment.name,
-            fileId: attachment.url,
-          }))
-        );
       } catch (error) {
         console.error("Error uploading files!", error);
       } finally {
