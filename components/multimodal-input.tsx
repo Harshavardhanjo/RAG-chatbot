@@ -195,27 +195,6 @@ function PureMultimodalInput({
     [setAttachments]
   );
 
-  const createResources = async (content: string) => {
-    try {
-      const response = await fetch("/api/resources", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data;
-      }
-      const { error } = await response.json();
-      toast.error(error);
-    } catch (error) {
-      toast.error("Failed to create resource, please try again!");
-    }
-  };
-
   return (
     <div className="relative w-full flex flex-col gap-4">
       {messages.length === 0 &&

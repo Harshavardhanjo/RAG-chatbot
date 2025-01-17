@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { auth } from "@/app/(auth)/auth";
 import { analyzePDFDocument, createFile } from "@/lib/db/queries";
+import { user } from "@/lib/db/schema";
 
 // Use Blob instead of File since File is not available in Node.js environment
 const FileSchema = z.object({
@@ -65,13 +66,15 @@ export async function POST(request: Request) {
         userId: session.user?.id,
         type: file.type,
         name: filename,
+        createdAt: new Date(),
+        status: "processing",
+        description: "No Description Given",
       });
 
-      if (file.type === "application/pdf") {
-        await analyzePDFDocument(newFile[0].id, session.user?.id);
-      }
-
-      return NextResponse.json(data);
+      return NextResponse.json(
+        { file: newFile[0], userId: session.user.id },
+        { status: 200 }
+      );
     } catch (error) {
       return NextResponse.json({ error: "Upload failed" }, { status: 500 });
     }

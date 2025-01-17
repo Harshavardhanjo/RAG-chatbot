@@ -128,6 +128,11 @@ export const file = pgTable("File", {
     }),
   type: text("type").notNull().default("document"),
   name: text("name").notNull().default("No Name Given"), // This is fine as is
+  createdAt: timestamp("createdAt").notNull(),
+  status: varchar("status", {
+    enum: ["processing", "processed", "failed"],
+  }).default("processing"),
+  description: text("description").default("No Description Given"),
 });
 
 // Schema for files - used to validate API requests

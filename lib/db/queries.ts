@@ -356,6 +356,7 @@ export async function createFile({
         url,
         type,
         userId: session.user?.id as string,
+        createdAt: new Date(),
       })
       .returning();
     return data;
@@ -413,6 +414,7 @@ export const analyzePDFDocument = async (
   fileId: string,
   userId: string
 ): Promise<boolean> => {
+  console.log("Analyzing PDF document:", fileId);
   const document = await db.select().from(file).where(eq(file.id, fileId));
 
   if (!document) {
@@ -431,6 +433,8 @@ export const analyzePDFDocument = async (
 
   const maxSentences = 1000;
 
+  console.log("Full text Extracted:", fullText.length);
+
   try {
     const sentences = fullText.split(/(?<=[.!?])\s+/).slice(0, maxSentences);
     const promises = sentences.map((sentence) =>
@@ -438,8 +442,16 @@ export const analyzePDFDocument = async (
     );
     await Promise.all(promises);
 
+    console.log("Successfully analyzed PDF document:", fileId);
+
+    await db
+      .update(file)
+      .set({ status: "processed" })
+      .where(eq(file.id, fileId));
+
     return true;
   } catch (error) {
+    await db.update(file).set({ status: "failed" }).where(eq(file.id, fileId));
     console.error("Error analyzing PDF document:", error);
     return false;
   }
