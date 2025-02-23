@@ -177,11 +177,12 @@ export const embeddings = pgTable(
   "embeddings",
   {
     id: uuid("id").notNull().defaultRandom(),
-    resourceId: uuid("resourceId")
-      .notNull()
-      .references(() => resources.id),
+    resourceId: uuid("resourceId").references(() => resources.id),
     content: text("content").notNull(),
     embedding: vector("embedding", { dimensions: 1536 }).notNull(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id),
   },
   (table) => ({
     embeddingIndex: index("embeddingIndex").using(

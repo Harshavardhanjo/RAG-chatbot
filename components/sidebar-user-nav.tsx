@@ -50,7 +50,7 @@ export function SidebarUserNav({ user }: { user: User }) {
               {`Toggle ${theme === "light" ? "dark" : "light"} mode`}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
+            {/* <DropdownMenuItem asChild>
               <Link
                 href="/docs"
                 passHref
@@ -58,7 +58,7 @@ export function SidebarUserNav({ user }: { user: User }) {
               >
                 My Documents
               </Link>
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <button

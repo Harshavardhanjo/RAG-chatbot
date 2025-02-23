@@ -16,6 +16,7 @@ import {
   updateDocumentPrompt,
 } from "@/lib/ai/prompts";
 import {
+  createEmbeddings,
   deleteChatById,
   getChatById,
   getDocumentById,
@@ -32,7 +33,7 @@ import {
 } from "@/lib/utils";
 
 import { generateTitleFromUserMessage } from "../../actions";
-import { findRelevantContent } from "@/lib/ai/embedding";
+import { findRelevantContent, generateEmbedding } from "@/lib/ai/embedding";
 
 export const maxDuration = 60;
 
@@ -126,7 +127,13 @@ export async function POST(request: Request) {
                   "The content or resource to add to the knowledge base"
                 ),
             }),
-            execute: async ({ content }) => {
+            execute: async ({ content }: { content: string }) => {
+              if (session.user?.id) {
+                const res = await createEmbeddings({
+                  context: content,
+                  userId: session.user.id,
+                });
+              }
               return {
                 message: "Resource added to the knowledge base",
               };

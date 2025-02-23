@@ -13,6 +13,7 @@ const generateChunks = (input: string): string[] => {
     .filter((i) => i !== "");
 };
 
+//chunking the input text (used for long text)
 export const generateEmbeddings = async (
   value: string
 ): Promise<Array<{ embedding: number[]; content: string }>> => {
@@ -24,6 +25,7 @@ export const generateEmbeddings = async (
   return embeddings.map((e, i) => ({ content: chunks[i], embedding: e }));
 };
 
+//generating embedding for the input text (used for short text)
 export const generateEmbedding = async (value: string): Promise<number[]> => {
   const input = value.replaceAll("\\n", " ");
   const { embedding } = await embed({

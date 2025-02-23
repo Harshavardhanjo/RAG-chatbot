@@ -5,6 +5,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import { auth } from "../(auth)/auth";
 import Script from "next/script";
+import { redirect } from "next/navigation";
 
 export const experimental_ppr = true;
 
@@ -15,6 +16,10 @@ export default async function Layout({
 }) {
   const [session, cookieStore] = await Promise.all([auth(), cookies()]);
   const isCollapsed = cookieStore.get("sidebar:state")?.value !== "true";
+  console.log("session", session);
+  if (!session) {
+    redirect("/login");
+  }
 
   return (
     <>

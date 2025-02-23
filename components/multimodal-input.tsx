@@ -300,7 +300,8 @@ function PureAttachmentsButton({
       className="rounded-md rounded-bl-lg p-[7px] h-fit dark:border-zinc-700 hover:dark:bg-zinc-900 hover:bg-zinc-200"
       onClick={(event) => {
         event.preventDefault();
-        fileInputRef.current?.click();
+        // fileInputRef.current?.click();
+        toast.error("Working on extracting context from attachments!");
       }}
       disabled={isLoading}
       variant="ghost"

@@ -393,6 +393,7 @@ export const createResource = async (
       embeddings.map((embedding) => ({
         resourceId: resource.id,
         ...embedding,
+        userId,
       }))
     );
     // await db.insert(embeddingsTable).values(
@@ -490,4 +491,22 @@ async function getPDFText(url: string): Promise<string> {
       }
     });
   });
+}
+
+export async function createEmbeddings({
+  context,
+  userId,
+}: {
+  context: string;
+  userId: string;
+}) {
+  const res = await generateEmbeddings(context);
+  const dbRes = await db.insert(embeddingsTable).values(
+    res.map((embedding) => ({
+      content: embedding.content,
+      embedding: embedding.embedding,
+      userId,
+    }))
+  );
+  return dbRes;
 }

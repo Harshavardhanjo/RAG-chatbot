@@ -1,21 +1,21 @@
-import type { Message } from 'ai';
-import { toast } from 'sonner';
-import { useSWRConfig } from 'swr';
-import { useCopyToClipboard } from 'usehooks-ts';
+import type { Message } from "ai";
+import { toast } from "sonner";
+import { useSWRConfig } from "swr";
+import { useCopyToClipboard } from "usehooks-ts";
 
-import type { Vote } from '@/lib/db/schema';
-import { getMessageIdFromAnnotations } from '@/lib/utils';
+import type { Vote } from "@/lib/db/schema";
+import { getMessageIdFromAnnotations } from "@/lib/utils";
 
-import { CopyIcon, ThumbDownIcon, ThumbUpIcon } from './icons';
-import { Button } from './ui/button';
+import { CopyIcon, ThumbDownIcon, ThumbUpIcon } from "./icons";
+import { Button } from "./ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from './ui/tooltip';
-import { memo } from 'react';
-import equal from 'fast-deep-equal';
+} from "./ui/tooltip";
+import { memo } from "react";
+import equal from "fast-deep-equal";
 
 export function PureMessageActions({
   chatId,
@@ -32,7 +32,7 @@ export function PureMessageActions({
   const [_, copyToClipboard] = useCopyToClipboard();
 
   if (isLoading) return null;
-  if (message.role === 'user') return null;
+  if (message.role === "user") return null;
   if (message.toolInvocations && message.toolInvocations.length > 0)
     return null;
 
@@ -46,7 +46,7 @@ export function PureMessageActions({
               variant="outline"
               onClick={async () => {
                 await copyToClipboard(message.content as string);
-                toast.success('Copied to clipboard!');
+                toast.success("Copied to clipboard!");
               }}
             >
               <CopyIcon />
@@ -55,7 +55,7 @@ export function PureMessageActions({
           <TooltipContent>Copy</TooltipContent>
         </Tooltip>
 
-        <Tooltip>
+        {/* <Tooltip>
           <TooltipTrigger asChild>
             <Button
               className="py-1 px-2 h-fit text-muted-foreground !pointer-events-auto"
@@ -161,7 +161,7 @@ export function PureMessageActions({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Downvote Response</TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
       </div>
     </TooltipProvider>
   );
@@ -174,5 +174,5 @@ export const MessageActions = memo(
     if (prevProps.isLoading !== nextProps.isLoading) return false;
 
     return true;
-  },
+  }
 );
