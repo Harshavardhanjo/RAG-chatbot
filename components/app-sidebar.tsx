@@ -47,19 +47,21 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 onClick={() => setOpenMobile(false)}
                 className="flex items-center gap-3"
               >
-                <Link href="/docs">
-                  <ArrowLeft className="h-5 w-5 hover:bg-muted rounded-md cursor-pointer" />
+                <Link href="/docs" className="flex items-center gap-2 text-foreground/80 hover:text-foreground transition-colors">
+                  <div className="p-1 rounded-md bg-muted/50 border">
+                     <ArrowLeft className="h-4 w-4" />
+                  </div>
+                   <span className="font-medium tracking-tight">My Documents</span>
                 </Link>
-                <span className="text-lg font-semibold">My Documents</span>
               </div>
             ) : (
               <div
                 onClick={() => setOpenMobile(false)}
                 className="flex items-center gap-3"
               >
-                <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
-                  My Chats
-                </span>
+                 <span className="font-medium tracking-tight text-foreground/90 pl-1">
+                   My Chats
+                 </span>
               </div>
             )}
             {!isDocsRoute ? (

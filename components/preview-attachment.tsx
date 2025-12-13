@@ -15,26 +15,17 @@ export const PreviewAttachment = ({
   return (
     <div className="flex flex-col gap-2">
       <div className="h-16 aspect-video bg-muted rounded-md relative flex flex-col items-center justify-center">
-        {contentType ? (
-          contentType.startsWith("image") ? (
-            // NOTE: it is recommended to use next/image for images
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={url}
-              src={url}
-              alt={name ?? "An image attachment"}
-              className="rounded-md size-full object-cover"
-            />
-          ) : contentType === "application/pdf" ? (
-            <div className="p-5 flex items-center justify-center space-x-3 rounded-md">
-              <p className="text-sm text-zinc-500">{attachment.name}</p>
-              <File size="24" className="" />
-            </div>
-          ) : (
-            <div className="" />
-          )
+        {contentType?.startsWith("image") ? (
+          // NOTE: it is recommended to use next/image for images
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={url}
+            src={url}
+            alt={name ?? "An image attachment"}
+            className="rounded-md size-full object-cover"
+          />
         ) : (
-          <div className="" />
+          <File className="text-zinc-500" size={24} />
         )}
 
         {isUploading && (

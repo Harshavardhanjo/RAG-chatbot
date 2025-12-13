@@ -4,7 +4,6 @@ import { genSaltSync, hashSync } from "bcrypt-ts";
 import { and, asc, desc, eq, gt, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { PdfReader } from "pdfreader";
 import {
   user,
   chat,
@@ -344,7 +343,10 @@ export async function updateChatVisiblityById({
 export async function createFile({
   url,
   type,
-}: NewFileData): Promise<FileDocument[]> {
+  name,
+  status,
+  description,
+}: Omit<NewFileData, "userId" | "createdAt">): Promise<FileDocument[]> {
   const session = await auth();
   if (!session || !session.user) {
     throw new Error("Unauthorized");
@@ -355,6 +357,9 @@ export async function createFile({
       .values({
         url,
         type,
+        name,
+        status,
+        description,
         userId: session.user?.id as string,
         createdAt: new Date(),
       })
@@ -368,27 +373,72 @@ export async function createFile({
 
 export async function getFilesByUserId({ userId }: { userId: string }) {
   try {
-    return await db.select().from(file).where(eq(file.userId, userId));
+    return await db
+      .select()
+      .from(file)
+      .where(eq(file.userId, userId))
+      .orderBy(desc(file.createdAt));
   } catch (error) {
     console.error("Failed to get files by user id from database");
     throw error;
   }
 }
 
+export async function deleteFileById({ id }: { id: string }) {
+  try {
+    const fileResources = await db.select().from(resources).where(eq(resources.fileId, id));
+    
+    for (const resource of fileResources) {
+        await db.delete(embeddingsTable).where(eq(embeddingsTable.resourceId, resource.id));
+    }
+    
+    await db.delete(resources).where(eq(resources.fileId, id));
+    
+    return await db.delete(file).where(eq(file.id, id));
+  } catch (error) {
+    console.error("Failed to delete file by id from database");
+    throw error;
+  }
+}
+
+
+export async function updateFileStatus(id: string, status: "processing" | "processed" | "failed") {
+  try {
+    return await db.update(file).set({ status }).where(eq(file.id, id));
+  } catch (error) {
+    console.error("Failed to update file status in database");
+    throw error;
+  }
+}
+
+export async function getResourcesByFileId({ fileId }: { fileId: string }) {
+  try {
+    return await db.select().from(resources).where(eq(resources.fileId, fileId));
+  } catch (error) {
+    console.error("Failed to get resources by file id from database");
+    throw error;
+  }
+}
+
 export const createResource = async (
   input: NewResourceParams,
-  userId: string
+  userId: string,
+  onProgress?: (step: string) => void
 ) => {
-  console.log("createResource", input);
+
   try {
     const { content, fileId } = insertResourceSchema.parse(input);
 
+    onProgress?.("Saving raw resource...");
     const [resource] = await db
       .insert(resources)
       .values({ content, userId: userId, fileId })
       .returning();
 
+    onProgress?.("Generating semantic embeddings...");
     const embeddings = await generateEmbeddings(content);
+    
+    onProgress?.(`Saving ${embeddings.length} embeddings...`);
     await db.insert(embeddingsTable).values(
       embeddings.map((embedding) => ({
         resourceId: resource.id,
@@ -396,12 +446,6 @@ export const createResource = async (
         userId,
       }))
     );
-    // await db.insert(embeddingsTable).values(
-    //   embeddings.map((embedding) => ({
-    //     resourceId: resource.id,
-    //     ...embedding,
-    //   }))
-    // );
 
     return "Resource successfully created and embedded.";
   } catch (error) {
@@ -411,87 +455,7 @@ export const createResource = async (
   }
 };
 
-export const analyzePDFDocument = async (
-  fileId: string,
-  userId: string
-): Promise<boolean> => {
-  console.log("Analyzing PDF document:", fileId);
-  const document = await db.select().from(file).where(eq(file.id, fileId));
 
-  if (!document) {
-    return false;
-  }
-
-  const fullText = (await getPDFText(document[0].url))
-    .replace(/[Ɵθ]/g, "th") // Replace theta characters
-    .replace(/[^\x00-\x7F]/g, "") // Remove non-ASCII characters
-    .replace(/[^a-zA-Z0-9.,!? ]/g, " ") // Replace other special chars with space
-    // Fix common PDF scanning issues
-    .replace(/(?:[A-Za-z])\-\s+/g, "") // Remove hyphenated line breaks
-    .replace(/\s+/g, " ") // Normalize whitespace
-    .replace(/\s+([.,!?])/g, "$1") // Fix spacing before punctuation
-    .trim();
-
-  const maxSentences = 1000;
-
-  console.log("Full text Extracted:", fullText.length);
-
-  try {
-    const sentences = fullText.split(/(?<=[.!?])\s+/).slice(0, maxSentences);
-    const promises = sentences.map((sentence) =>
-      createResource({ content: sentence, fileId }, userId)
-    );
-    await Promise.all(promises);
-
-    console.log("Successfully analyzed PDF document:", fileId);
-
-    await db
-      .update(file)
-      .set({ status: "processed" })
-      .where(eq(file.id, fileId));
-
-    return true;
-  } catch (error) {
-    await db.update(file).set({ status: "failed" }).where(eq(file.id, fileId));
-    console.error("Error analyzing PDF document:", error);
-    return false;
-  }
-};
-
-async function getPDFText(url: string): Promise<string> {
-  const pdfBuffer = await fetch(url).then(async (res) =>
-    Buffer.from(await res.arrayBuffer())
-  );
-
-  return new Promise((resolve, reject) => {
-    let textItems: string[] = [];
-
-    const pdf = new PdfReader();
-
-    pdf.parseBuffer(pdfBuffer, (err, item) => {
-      if (err) {
-        console.error("Error parsing PDF:", err);
-        reject(err);
-        return;
-      }
-
-      if (!item) {
-        // End of file reached, combine all text items
-        const fullText = textItems
-          .join(" ")
-          .replace(/(\r\n|\n|\r)/gm, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-        resolve(fullText);
-        return;
-      }
-
-      if (item.text) {
-        textItems.push(item.text);
-      }
-    });
-  });
-}
 
 export async function createEmbeddings({
   context,
@@ -509,4 +473,37 @@ export async function createEmbeddings({
     }))
   );
   return dbRes;
+}
+
+export async function analyzePDFDocument(file: File, fileId: string, onProgress?: (step: string) => void) {
+  const session = await auth();
+  if (!session || !session.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  // @ts-ignore
+  const pdf = (await import("pdf-parse")).default;
+
+  try {
+    onProgress?.("Extracting text from PDF...");
+    const data = await pdf(buffer);
+    const text = data.text;
+
+    if (text && text.length > 0) {
+      const result = await createResource(
+        { content: text, fileId },
+        session.user?.id as string,
+        onProgress
+      );
+      return result;
+    } else {
+      return "No text found in PDF";
+    }
+  } catch (error) {
+    console.error("Error parsing PDF:", error);
+    throw error;
+  }
 }

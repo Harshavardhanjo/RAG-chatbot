@@ -88,6 +88,15 @@ export async function POST(request: Request) {
     return new Response("No user message found", { status: 400 });
   }
 
+  // Filter out non-image attachments from the user message
+  if (Array.isArray(userMessage.content)) {
+    userMessage.content = userMessage.content.filter((part) => {
+      if (part.type === "image") return true;
+      if (part.type === "text") return true;
+      return false;
+    });
+  }
+
   const chat = await getChatById({ id });
 
   if (!chat) {
@@ -146,7 +155,10 @@ export async function POST(request: Request) {
               question: z.string().describe("The user's question"),
             }),
             execute: async ({ question }) => {
-              return findRelevantContent(question);
+              if (!session.user?.id) {
+                  return "Unauthorized: Please log in.";
+              }
+              return findRelevantContent(question, session.user.id);
             },
           },
           getWeather: {

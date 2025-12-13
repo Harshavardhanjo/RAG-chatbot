@@ -12,6 +12,8 @@ import { useSidebar } from "./ui/sidebar";
 import { memo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { VisibilityType, VisibilitySelector } from "./visibility-selector";
+import { KnowledgeGraph } from "./knowledge-graph";
+import { KnowledgeBase } from "./knowledge-base";
 
 function PureChatHeader({
   chatId,
@@ -58,6 +60,9 @@ function PureChatHeader({
           className="order-1 md:order-2"
         />
       )}
+      
+      {!isReadonly && <KnowledgeGraph />}
+      {!isReadonly && <KnowledgeBase />}
 
       {/* {!isReadonly && (
         <VisibilitySelector

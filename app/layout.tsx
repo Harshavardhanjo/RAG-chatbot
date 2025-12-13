@@ -37,6 +37,9 @@ const THEME_COLOR_SCRIPT = `\
   updateThemeColor();
 })();`;
 
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -58,7 +61,9 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased">
+      <body
+        className={`${GeistSans.variable} ${GeistMono.variable} antialiased font-sans`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

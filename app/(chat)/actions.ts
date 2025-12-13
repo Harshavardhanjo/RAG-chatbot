@@ -98,7 +98,7 @@ export const analyzePDFDocument = async (
   fileId: string,
   userId: string
 ): Promise<boolean> => {
-  console.log(`Starting PDF analysis for file: ${fileId}, user: ${userId}`);
+
 
   try {
     // Update status to processing
@@ -110,7 +110,7 @@ export const analyzePDFDocument = async (
 
     // Extract and clean text
     const fullText = await extractAndCleanPDFText(document.url);
-    console.log(`Extracted ${fullText.length} characters from PDF`);
+
 
     if (!fullText) {
       throw new PDFProcessingError("No text content found in PDF", fileId);
@@ -123,7 +123,7 @@ export const analyzePDFDocument = async (
     // Update final status
     await updateFileStatus(fileId, "processed");
 
-    console.log(`Successfully processed PDF document: ${fileId}`);
+
     return true;
   } catch (error) {
     console.error(`Error processing PDF document ${fileId}:`, error);

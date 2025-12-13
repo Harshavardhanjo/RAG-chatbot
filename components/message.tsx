@@ -153,6 +153,10 @@ const PurePreviewMessage = ({
                             result={result}
                             isReadonly={isReadonly}
                           />
+                        ) : toolName === 'getInformation' || toolName === 'addResource' ? (
+                          <div className="text-xs text-muted-foreground italic">
+                            {toolName === 'getInformation' ? 'Searched knowledge base...' : 'Added to knowledge base.'}
+                          </div>
                         ) : (
                           <pre>{JSON.stringify(result, null, 2)}</pre>
                         )}

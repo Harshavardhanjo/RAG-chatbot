@@ -123,7 +123,9 @@ function PureMultimodalInput({
     window.history.replaceState({}, "", `/chat/${chatId}`);
 
     handleSubmit(undefined, {
-      experimental_attachments: attachments,
+      experimental_attachments: attachments.filter((a) =>
+        a.contentType?.startsWith("image")
+      ),
     });
 
     setAttachments([]);
@@ -154,12 +156,12 @@ function PureMultimodalInput({
 
       if (response.ok) {
         const data = await response.json();
-        const { url, pathname, contentType } = data;
+        const { file } = data;
 
         return {
-          url,
-          name: pathname,
-          contentType: contentType,
+          url: file.url,
+          name: file.name,
+          contentType: file.type,
         };
       }
       const { error } = await response.json();
@@ -186,6 +188,9 @@ function PureMultimodalInput({
           ...currentAttachments,
           ...successfullyUploadedAttachments,
         ]);
+        toast.success(
+          "File(s) extracted, analyzed and added to knowledge base!"
+        );
       } catch (error) {
         console.error("Error uploading files!", error);
       } finally {
@@ -300,8 +305,7 @@ function PureAttachmentsButton({
       className="rounded-md rounded-bl-lg p-[7px] h-fit dark:border-zinc-700 hover:dark:bg-zinc-900 hover:bg-zinc-200"
       onClick={(event) => {
         event.preventDefault();
-        // fileInputRef.current?.click();
-        toast.error("Working on extracting context from attachments!");
+        fileInputRef.current?.click();
       }}
       disabled={isLoading}
       variant="ghost"
