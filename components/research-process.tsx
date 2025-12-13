@@ -48,7 +48,7 @@ export function ResearchProcess({ data }: { data?: any[] }) {
                                         Agent Reasoning (HyDE)
                                     </div>
                                     <div className="bg-background p-2 rounded border italic text-muted-foreground">
-                                        "{hyde.content}"
+                                        &quot;{hyde.content}&quot;
                                     </div>
                                 </div>
                             )}
@@ -75,7 +75,7 @@ export function ResearchProcess({ data }: { data?: any[] }) {
                                                         </div>
                                                         {ev.isRelevant && ev.quotes && ev.quotes.length > 0 && (
                                                             <div className="mt-2 bg-background p-1.5 rounded text-[10px] italic border-l-2 border-green-500">
-                                                                "{ev.quotes[0]}"
+                                                                &quot;{ev.quotes[0]}&quot;
                                                             </div>
                                                         )}
                                                     </div>
