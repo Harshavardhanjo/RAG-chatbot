@@ -11,12 +11,11 @@ import {
   getMessageById,
   updateChatVisiblityById,
 } from "@/lib/db/queries";
-import { VisibilityType } from "@/components/visibility-selector";
-import { file, FileDocument } from "@/lib/db/schema";
+import type { VisibilityType } from "@/components/visibility-selector";
+import { file, } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { PdfReader } from "pdfreader";
 import { z } from "zod";
-import { toast } from "sonner";
 
 export async function saveModelId(model: string) {
   const cookieStore = await cookies();

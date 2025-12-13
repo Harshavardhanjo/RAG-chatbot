@@ -4,8 +4,6 @@ import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import "./globals.css";
-import { auth } from "./(auth)/auth";
-import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://rag-chatbot.harshavardhanjo.com/"),

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
-import { getResourcesByFileId } from "@/lib/db/queries";
+import { getChunksByFileId } from "@/lib/db/queries";
 
 export async function GET(
   request: Request,
@@ -15,7 +15,7 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const chunks = await getResourcesByFileId({ fileId: id });
+    const chunks = await getChunksByFileId({ fileId: id });
     return NextResponse.json(chunks);
   } catch (error) {
     return NextResponse.json(

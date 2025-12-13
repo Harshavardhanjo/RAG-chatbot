@@ -2,7 +2,7 @@
 
 import type { Attachment, Message } from "ai";
 import { useChat } from "ai/react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
 import { ChatHeader } from "@/components/chat-header";
@@ -12,7 +12,7 @@ import { fetcher } from "@/lib/utils";
 import { Block } from "./block";
 import { MultimodalInput } from "./multimodal-input";
 import { Messages } from "./messages";
-import { VisibilityType } from "./visibility-selector";
+import type { VisibilityType } from "./visibility-selector";
 import { useBlockSelector } from "@/hooks/use-block";
 
 export function Chat({
@@ -40,15 +40,46 @@ export function Chat({
     isLoading,
     stop,
     reload,
+    data,
   } = useChat({
     id,
     body: { id, modelId: selectedModelId },
     initialMessages,
     experimental_throttle: 100,
-    onFinish: () => {
-      mutate("/api/history");
+    onFinish: (message) => {
+       // Persist the data (research log) to the message annotations
+       if (dataRef.current && dataRef.current.length > 0) {
+           setMessages(msgs => {
+               const lastMsg = msgs[msgs.length - 1];
+               if (lastMsg.id === message.id) {
+                   const logAnnotation = {
+                       type: 'research-log',
+                       content: dataRef.current as any
+                   };
+                   
+                   return [
+                       ...msgs.slice(0, -1),
+                       {
+                           ...lastMsg,
+                           annotations: [
+                               ...(lastMsg.annotations || []),
+                               logAnnotation as any
+                           ]
+                       }
+                   ];
+               }
+               return msgs;
+           });
+       }
+       mutate("/api/history");
     },
   });
+
+  // Keep ref synced with data
+  const dataRef = useRef(data);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   const { data: votes } = useSWR<Array<Vote>>(
     `/api/vote?chatId=${id}`,
@@ -77,6 +108,7 @@ export function Chat({
           reload={reload}
           isReadonly={isReadonly}
           isBlockVisible={isBlockVisible}
+          data={data}
         />
 
         <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">

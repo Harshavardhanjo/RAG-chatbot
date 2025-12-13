@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { User } from "next-auth";
 import Link from "next/link";
 import { FileText } from "lucide-react";
-import { FileDocument } from "@/lib/db/schema";
+import type { FileDocument } from "@/lib/db/schema";
 
 export function UserDocs({ user }: { user: User | undefined }) {
   const [docs, setDocs] = useState<FileDocument[]>([]);

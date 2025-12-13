@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { FileText, Loader2, RefreshCw, ChevronRight, Upload, Plus, Trash } from "lucide-react";
+import { FileText, Loader2, RefreshCw, Plus, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { RagProcessViewer } from "@/components/rag-process-viewer";
 import { ChunkViewer } from "@/components/chunk-viewer";
@@ -16,16 +16,17 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileDocument } from "@/lib/db/schema";
+import type { FileDocument } from "@/lib/db/schema";
 
 export function KnowledgeBase() {
   const [files, setFiles] = useState<FileDocument[]>([]);
   const [loading, setLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [lastEvent, setLastEvent] = useState<any>(null); // Store full event
+  const [events, setEvents] = useState<any[]>([]);
   const [uploadStep, setUploadStep] = useState<string>("");
   const [viewingFile, setViewingFile] = useState<FileDocument | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchFiles = async () => {
@@ -45,6 +46,7 @@ export function KnowledgeBase() {
   };
 
   useEffect(() => {
+    console.log("KnowledgeBase component mounted");
     if (isOpen) {
       fetchFiles();
     }
@@ -65,7 +67,7 @@ export function KnowledgeBase() {
 
     setIsUploading(true);
     setUploadStep("Starting upload...");
-    setLastEvent({ type: 'log', message: "Starting upload..." });
+    setEvents([{ type: 'log', message: "Starting upload..." }]);
     const formData = new FormData();
     formData.append("file", file);
 
@@ -92,7 +94,7 @@ export function KnowledgeBase() {
         for (const line of lines) {
             try {
                 const data = JSON.parse(line);
-                setLastEvent(data); // Store last event for UI
+                setEvents(prev => [...prev, data]);
                 
                 if (data.status === 'progress' || data.type === 'log') {
                    // Handle standard messages
@@ -145,22 +147,61 @@ export function KnowledgeBase() {
     }
   };
 
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedIds.size} files?`)) return;
+
+    try {
+       const res = await fetch("/api/files/bulk-delete", {
+           method: "POST",
+           body: JSON.stringify({ ids: Array.from(selectedIds) }),
+       });
+
+       if (res.ok) {
+           const data = await res.json();
+           toast.success(`Deleted ${data.deletedCount} files`);
+           setSelectedIds(new Set());
+           fetchFiles();
+       } else {
+           toast.error("Failed to delete selected files");
+       }
+    } catch (error) {
+        toast.error("Failed to delete selected files");
+    }
+  };
+
+  const toggleSelection = (id: string) => {
+      setSelectedIds(prev => {
+          const next = new Set(prev);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return next;
+      });
+  };
+
+  const toggleSelectAll = () => {
+      if (selectedIds.size === files.length) {
+          setSelectedIds(new Set());
+      } else {
+          setSelectedIds(new Set(files.map(f => f.id)));
+      }
+  };
+
   return (
     <>
       <RagProcessViewer 
         isOpen={isUploading} 
-        currentMessage={uploadStep} 
-        currentEvent={lastEvent}
+        events={events}
         onClose={() => setIsUploading(false)} 
       />
       <ChunkViewer file={viewingFile} onClose={() => setViewingFile(null)} />
+      
+      <Button variant="outline" size="sm" className="flex gap-2" onClick={() => setIsOpen(true)}>
+        <FileText size={16} />
+        Knowledge Base
+      </Button>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="sm" className="hidden md:flex gap-2">
-            <FileText size={16} />
-            Knowledge Base
-          </Button>
-        </SheetTrigger>
         <SheetContent className="sm:max-w-[800px] w-full">
           <SheetHeader>
             <SheetTitle>Knowledge Base</SheetTitle>
@@ -197,7 +238,27 @@ export function KnowledgeBase() {
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               <span className="ml-2">Refresh</span>
             </Button>
+
+            
+            {selectedIds.size > 0 && (
+                <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                    <Trash className="h-4 w-4 mr-2" />
+                    Delete ({selectedIds.size})
+                </Button>
+            )}
           </div>
+          
+           {files.length > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 border-b">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-gray-300 pointer-events-auto"
+                    checked={selectedIds.size === files.length && files.length > 0}
+                    onChange={toggleSelectAll}
+                  />
+                  <span className="text-sm text-muted-foreground">Select All</span>
+              </div>
+           )}
 
           <ScrollArea className="h-[calc(100vh-200px)] pr-4">
             {loading && files.length === 0 ? (
@@ -214,6 +275,8 @@ export function KnowledgeBase() {
                   <FileItem 
                     key={file.id} 
                     file={file} 
+                    isSelected={selectedIds.has(file.id)}
+                    onToggle={() => toggleSelection(file.id)}
                     onDelete={() => handleDelete(file.id)}
                     onView={() => setViewingFile(file)}
                   />
@@ -229,17 +292,27 @@ export function KnowledgeBase() {
 
 function FileItem({ 
     file, 
+    isSelected,
+    onToggle,
     onDelete, 
     onView 
 }: { 
     file: FileDocument; 
+    isSelected: boolean;
+    onToggle: () => void;
     onDelete: () => void; 
     onView: () => void;
 }) {
 
   return (
-    <div className="flex flex-col gap-1 p-3 border rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-      <div className="flex items-center justify-between">
+    <div className={`flex flex-col gap-1 p-3 border rounded-lg transition-colors ${isSelected ? 'bg-blue-500/10 border-blue-500/50' : 'bg-muted/50 hover:bg-muted'}`}>
+      <div className="flex items-center justify-between gap-3">
+        <input 
+            type="checkbox" 
+            checked={isSelected} 
+            onChange={(e) => { e.stopPropagation(); onToggle(); }}
+            className="w-4 h-4 rounded border-gray-300 pointer-events-auto"
+        />
         <div className="flex items-center gap-3 overflow-hidden cursor-pointer flex-1" onClick={onView}>
             <div className="w-8 h-8 rounded bg-background flex items-center justify-center border shrink-0">
                 <FileText size={16} className="text-muted-foreground" />

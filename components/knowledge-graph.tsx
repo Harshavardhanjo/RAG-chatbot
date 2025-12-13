@@ -145,11 +145,11 @@ export function KnowledgeGraph() {
                         {/* Legend Overlay */}
                         <div className="absolute bottom-4 left-4 p-3 bg-background/80 backdrop-blur-sm border rounded-lg shadow-sm text-xs space-y-2 pointer-events-none">
                             <div className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                                <span className="w-3 h-3 rounded-full bg-blue-500" />
                                 <span className="font-medium text-foreground">Document</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                                <span className="w-3 h-3 rounded-full bg-green-500" />
                                 <span className="font-medium text-foreground">Memory Chunk</span>
                             </div>
                             <div className="text-[10px] text-muted-foreground mt-1 pt-1 border-t">

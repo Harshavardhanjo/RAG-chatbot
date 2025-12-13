@@ -29,7 +29,6 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { SuggestedActions } from "./suggested-actions";
 import equal from "fast-deep-equal";
-import { NewResourceParams } from "@/lib/db/schema";
 
 function PureMultimodalInput({
   chatId,

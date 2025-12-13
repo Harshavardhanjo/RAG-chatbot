@@ -1,7 +1,7 @@
 import "server-only";
 
 import { genSaltSync, hashSync } from "bcrypt-ts";
-import { and, asc, desc, eq, gt, gte } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -14,15 +14,15 @@ import {
   type Message,
   message,
   vote,
-  NewFileData,
+  type NewFileData,
   file,
-  FileDocument,
+  type FileDocument,
   insertResourceSchema,
-  NewResourceParams,
+  type NewResourceParams,
   resources,
   embeddings as embeddingsTable,
 } from "./schema";
-import { BlockKind } from "@/components/block";
+import type { BlockKind } from "@/components/block";
 import { auth } from "@/app/(auth)/auth";
 import { generateEmbeddings } from "../ai/embedding";
 
@@ -39,6 +39,30 @@ export async function getUser(email: string): Promise<Array<User>> {
     return await db.select().from(user).where(eq(user.email, email));
   } catch (error) {
     console.error("Failed to get user from database");
+    throw error;
+  }
+}
+
+export async function getUserUsage(userId: string) {
+  const oneDayAgo = new Date();
+  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+  try {
+    const result = await db
+      .select({ id: message.id })
+      .from(message)
+      .leftJoin(chat, eq(message.chatId, chat.id))
+      .where(
+        and(
+          eq(message.role, "user"),
+          gte(message.createdAt, oneDayAgo),
+          eq(chat.userId, userId)
+        )
+      );
+
+    return result.length;
+  } catch (error) {
+    console.error("Failed to get user usage from database");
     throw error;
   }
 }
@@ -420,25 +444,54 @@ export async function getResourcesByFileId({ fileId }: { fileId: string }) {
   }
 }
 
+export async function getChunksByFileId({ fileId }: { fileId: string }) {
+  try {
+    // 1. Get resources for the file
+    const fileResources = await db
+      .select({ id: resources.id })
+      .from(resources)
+      .where(eq(resources.fileId, fileId));
+
+    if (fileResources.length === 0) return [];
+
+    const resourceIds = fileResources.map(r => r.id);
+
+    // 2. Get embeddings (chunks) for these resources
+    const chunks = await db
+      .select({
+        id: embeddingsTable.id,
+        content: embeddingsTable.content,
+        // resourceId: embeddingsTable.resourceId, 
+      })
+      .from(embeddingsTable)
+      .where(inArray(embeddingsTable.resourceId, resourceIds));
+
+    return chunks;
+  } catch (error) {
+    console.error("Failed to get chunks by file id from database", error);
+    throw error; 
+  }
+}
+
 export const createResource = async (
   input: NewResourceParams,
   userId: string,
-  onProgress?: (step: string) => void
+  onProgress?: (step: any) => void
 ) => {
 
   try {
     const { content, fileId } = insertResourceSchema.parse(input);
 
-    onProgress?.("Saving raw resource...");
+    onProgress?.({ type: "log", message: "Saving raw resource..." });
     const [resource] = await db
       .insert(resources)
       .values({ content, userId: userId, fileId })
       .returning();
 
-    onProgress?.("Generating semantic embeddings...");
-    const embeddings = await generateEmbeddings(content);
+    onProgress?.({ type: "log", message: "Generating semantic embeddings..." });
+    const embeddings = await generateEmbeddings(content, onProgress);
     
-    onProgress?.(`Saving ${embeddings.length} embeddings...`);
+    onProgress?.({ type: "log", message: `Saving ${embeddings.length} embeddings...` });
     await db.insert(embeddingsTable).values(
       embeddings.map((embedding) => ({
         resourceId: resource.id,
@@ -475,7 +528,7 @@ export async function createEmbeddings({
   return dbRes;
 }
 
-export async function analyzePDFDocument(file: File, fileId: string, onProgress?: (step: string) => void) {
+export async function analyzePDFDocument(file: File, fileId: string, onProgress?: (step: any) => void) {
   const session = await auth();
   if (!session || !session.user) {
     throw new Error("Unauthorized");
@@ -483,14 +536,30 @@ export async function analyzePDFDocument(file: File, fileId: string, onProgress?
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+  
+  onProgress?.({ type: "log", message: `PDF loaded into memory. Buffer size: ${buffer.length} bytes.` });
 
   // @ts-ignore
   const pdf = (await import("pdf-parse")).default;
 
   try {
-    onProgress?.("Extracting text from PDF...");
-    const data = await pdf(buffer);
+    onProgress?.({ type: "log", message: "Starting PDF text extraction..." });
+    
+    // Suppress noisy PDF.js warnings
+    const originalWarn = console.warn;
+    console.warn = () => {};
+    
+    let data;
+    try {
+        data = await pdf(buffer);
+    } finally {
+        console.warn = originalWarn;
+    }
+    
     const text = data.text;
+    
+    onProgress?.({ type: "log", message: `Text extraction complete. Found ${text.length} characters.` });
+    onProgress?.({ type: "log", message: `Metadata: ${JSON.stringify(data.info || {})}` });
 
     if (text && text.length > 0) {
       const result = await createResource(
