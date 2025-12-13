@@ -17,6 +17,7 @@ import {
   SidebarMenu,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { LoadingOverlay } from "@/components/loading-overlay";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { UserDocs } from "@/components/user-docs"; // You'll need to create this component
 import { ArrowLeft } from "lucide-react";
@@ -26,12 +27,15 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
   const [isDocsRoute, setIsDocsRoute] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     setIsDocsRoute(pathname?.startsWith("/docs") ?? false);
+    setIsNavigating(false);
   }, [pathname]);
 
   const handleNewChat = () => {
+    setIsNavigating(true);
     setOpenMobile(false);
     router.push("/");
     router.refresh();
@@ -70,6 +74,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   <Button
                     variant="ghost"
                     onClick={handleNewChat}
+                    disabled={pathname === "/"}
                     className="p-2 h-fit"
                   >
                     <PlusIcon />
@@ -106,6 +111,12 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       <SidebarFooter className="border-t px-4 py-2">
         {user && <SidebarUserNav user={user} />}
       </SidebarFooter>
+      <LoadingOverlay isLoading={isNavigating} />
     </Sidebar>
-  ) : null;
+  ) : (
+    <div className="hidden">
+        {/* Even in docs mode, we might want the overlay if resetting, but for now strict to sidebar */}
+       <LoadingOverlay isLoading={isNavigating} />
+    </div>
+  );
 }

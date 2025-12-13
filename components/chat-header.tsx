@@ -1,19 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useWindowSize } from "usehooks-ts";
+import { memo, useState, useEffect } from "react";
 
 import { ModelSelector } from "@/components/model-selector";
 import { SidebarToggle } from "@/components/sidebar-toggle";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, VercelIcon } from "./icons";
 import { useSidebar } from "./ui/sidebar";
-import { memo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { VisibilityType, VisibilitySelector } from "./visibility-selector";
 import { KnowledgeGraph } from "./knowledge-graph";
 import { KnowledgeBase } from "./knowledge-base";
+
+import { LoadingOverlay } from "@/components/loading-overlay";
 
 function PureChatHeader({
   chatId,
@@ -28,8 +30,14 @@ function PureChatHeader({
 }) {
   const router = useRouter();
   const { open } = useSidebar();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const { width: windowWidth } = useWindowSize();
+  const pathname = usePathname();
+
+  useEffect(() => {
+      setIsNavigating(false);
+  }, [pathname]);
 
   return (
     <header className="flex sticky top-0 bg-background py-1.5 items-center px-2 md:px-2 gap-2">
@@ -42,9 +50,11 @@ function PureChatHeader({
               variant="outline"
               className="order-2 md:order-1 md:px-2 px-2 md:h-fit ml-auto md:ml-0"
               onClick={() => {
+                setIsNavigating(true);
                 router.push("/");
                 router.refresh();
               }}
+              disabled={pathname === "/"}
             >
               <PlusIcon />
               <span className="md:sr-only">New Chat</span>
@@ -71,6 +81,7 @@ function PureChatHeader({
           className="order-1 md:order-3"
         />
       )} */}
+      <LoadingOverlay isLoading={isNavigating} />
     </header>
   );
 }
