@@ -1,89 +1,49 @@
-import { generateText, embed, embedMany } from "ai";
+import { generateText, embed, embedMany, generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { cosineDistance, desc, gt, sql, eq, and } from "drizzle-orm";
 import { embeddings } from "../db/schema";
 import { db } from "../db/queries";
+import { z } from "zod";
 
 const embeddingModel = openai.embedding("text-embedding-3-small");
-
-// Helper to calculate cosine similarity
-const cosineSimilarity = (a: number[], b: number[]) => {
-  const dotProduct = a.reduce((sum, val, i) => sum + val * b[i], 0);
-  const magnitudeA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
-  const magnitudeB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
-  return dotProduct / (magnitudeA * magnitudeB);
-};
 
 export const generateEmbeddings = async (
   value: string,
   onProgress?: (event: any) => void
 ): Promise<Array<{ embedding: number[]; content: string }>> => {
-  // 1. Split into sentences (simple rule-based)
-  const sentences = value.match(/[^.!?]+[.!?]+[\])'"]*/g) || [value];
-
-  // 2. Generate embeddings for all sentences
-  if (onProgress) onProgress({ type: "log", message: `Embedding ${sentences.length} sentences...` });
   
-  // Use embedMany for efficiency
-  const { embeddings: sentenceEmbeddings } = await embedMany({
-    model: embeddingModel,
-    values: sentences,
+  // 1. Agentic Analysis
+  if (onProgress) onProgress({ type: "log", message: "Agent is reading document structure..." });
+
+  const { object } = await generateObject({
+    model: openai("gpt-4o-mini"),
+    schema: z.object({
+      chunks: z.array(z.string()).describe("Semantically complete chunks of the text"),
+    }),
+    system: `You are an expert content editor. Your task is to split the input text into semantically self-contained chunks.
+    
+    Rules:
+    - Each chunk must be a complete idea or concept.
+    - Preserve all technical details and code blocks.
+    - Do not summarize; use the exact original text, just split it intelligently.
+    - Chunk size should be roughly 150-300 words.
+    - If a code block is long, keep it together with its explanation if possible.`,
+    prompt: value,
   });
 
-  // 3. Group sentences based on semantic similarity
-  const chunks: string[] = [];
-  let currentChunk = sentences[0];
-  let currentChunkEmbedding = sentenceEmbeddings[0];
+  const chunks = object.chunks;
 
-  for (let i = 1; i < sentences.length; i++) {
-    const nextSentence = sentences[i];
-    const nextEmbedding = sentenceEmbeddings[i];
-
-    const similarity = cosineSimilarity(currentChunkEmbedding, nextEmbedding);
-
-    // Emit debug event for visualization (throttle to avoid flooding)
-    if (onProgress && i % 2 === 0) { 
-        onProgress({ 
-            type: "similarity", 
-            sentence1: currentChunk.substring(0, 50) + "...", 
-            sentence2: nextSentence.substring(0, 50) + "...", 
-            score: similarity.toFixed(2),
-            threshold: 0.5 
-        }); 
-    }
-
-    if (similarity > 0.5) {
-      // Semantically similar: Group them
-      currentChunk += " " + nextSentence;
-      currentChunkEmbedding = nextEmbedding; 
-    } else {
-      // Not similar: Close chunk and start new
-      chunks.push(currentChunk);
-      if (onProgress) onProgress({ type: "chunk_created", content: currentChunk.substring(0, 40) + "..." });
-      
-      currentChunk = nextSentence;
-      currentChunkEmbedding = nextEmbedding;
-    }
+  if (onProgress) {
+      onProgress({ type: "log", message: `Agent identified ${chunks.length} semantic concepts.` });
+      chunks.forEach(chunk => {
+          onProgress({ type: "chunk_created", content: chunk.substring(0, 50) + "..." });
+      });
   }
-  chunks.push(currentChunk); // Add final chunk
 
-  // 4. Re-embed the final chunks for high-quality retrieval
-  if (onProgress) onProgress({ type: "log", message: `Generated ${chunks.length} semantic chunks. Re-embedding...` });
+  // 2. Embed the Agent's Chunks
+  if (onProgress) onProgress({ type: "log", message: " generating vectors for chunks..." });
   
-  const finalEmbeddings = await Promise.all(
-    chunks.map(async (chunk) => {
-        // Reuse the single embedding function or the batch one. 
-        // Batch is better but we already have `generateEmbedding` helper below.
-        // Let's us embedMany for the chunks too.
-        return {
-           content: chunk,
-           embedding: [] as number[] // placeholder, satisfied below
-        }
-    })
-  );
-  
-  // Actual embedding call for final chunks
-   const { embeddings: finalVectors } = await embedMany({
+  const { embeddings: finalVectors } = await embedMany({
     model: embeddingModel,
     values: chunks,
   });
