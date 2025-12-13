@@ -44,7 +44,7 @@ export function LoadingOverlay({ isLoading }: { isLoading: boolean }) {
             <div className="relative">
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
               >
                 <Loader2 className="w-12 h-12 text-primary" />
               </motion.div>

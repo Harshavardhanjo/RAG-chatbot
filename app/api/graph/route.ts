@@ -1,6 +1,6 @@
 import { auth } from "@/app/(auth)/auth";
 import { db } from "@/lib/db/queries";
-import { file, resources } from "@/lib/db/schema";
+import { file, resources, embeddings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -19,9 +19,15 @@ export async function GET() {
       .from(file)
       .where(eq(file.userId, session.user.id));
 
-    const allResources = await db
-      .select()
-      .from(resources)
+    // Fetch embeddings (chunks) joined with resources to get the fileId
+    const chunks = await db
+      .select({
+        id: embeddings.id,
+        content: embeddings.content,
+        fileId: resources.fileId,
+      })
+      .from(embeddings)
+      .innerJoin(resources, eq(embeddings.resourceId, resources.id))
       .where(eq(resources.userId, session.user.id));
 
     const nodes = [
@@ -31,18 +37,18 @@ export async function GET() {
         type: "file",
         val: 10,
       })),
-      ...allResources.map((r) => ({
-        id: r.id,
-        name: r.content.substring(0, 20) + "...",
-        type: "resource",
+      ...chunks.map((c) => ({
+        id: c.id,
+        name: `${c.content.substring(0, 20)}...`,
+        type: "resource", // Keeping type as 'resource' for frontend compatibility, but it represents a chunk now
         val: 5,
-        fullContent: r.content,
+        fullContent: c.content,
       })),
     ];
 
-    const links = allResources.map((r) => ({
-      source: r.fileId,
-      target: r.id,
+    const links = chunks.map((c) => ({
+      source: c.fileId,
+      target: c.id,
     }));
 
     return NextResponse.json({ nodes, links });

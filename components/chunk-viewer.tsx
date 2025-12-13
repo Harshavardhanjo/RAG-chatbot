@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Copy, Check } from "lucide-react";
-import { FileDocument } from "@/lib/db/schema";
+import type { FileDocument } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 

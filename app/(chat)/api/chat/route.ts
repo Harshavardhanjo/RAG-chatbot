@@ -20,6 +20,8 @@ import {
   deleteChatById,
   getChatById,
   getDocumentById,
+  getUser,
+  getUserUsage,
   saveChat,
   saveDocument,
   saveMessages,
@@ -33,7 +35,7 @@ import {
 } from "@/lib/utils";
 
 import { generateTitleFromUserMessage } from "../../actions";
-import { findRelevantContent, generateEmbedding } from "@/lib/ai/embedding";
+import { findRelevantContent, } from "@/lib/ai/embedding";
 
 export const maxDuration = 60;
 
@@ -74,6 +76,18 @@ export async function POST(request: Request) {
   if (!session || !session.user || !session.user.id) {
     return new Response("Unauthorized", { status: 401 });
   }
+
+  const [user] = await getUser(session.user.email as string);
+  const plan = user?.plan || "free";
+  const usage = await getUserUsage(session.user.id);
+
+  /*
+  if (plan === "free" && usage >= 10) {
+    return new Response("Daily message limit reached. Upgrade to Pro for unlimited access.", {
+      status: 403,
+    });
+  }
+  */
 
   const model = models.find((model) => model.id === modelId);
 
@@ -158,7 +172,9 @@ export async function POST(request: Request) {
               if (!session.user?.id) {
                   return "Unauthorized: Please log in.";
               }
-              return findRelevantContent(question, session.user.id);
+              return findRelevantContent(question, session.user.id, (step) => {
+                  dataStream.writeData({ type: "trace", content: step });
+              });
             },
           },
           getWeather: {

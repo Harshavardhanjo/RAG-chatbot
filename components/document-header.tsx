@@ -2,8 +2,8 @@
 
 import { SidebarToggle } from "@/components/sidebar-toggle";
 import { Button } from "@/components/ui/button";
-import { Attachment } from "ai";
-import { ChangeEvent, memo, useCallback, useState } from "react";
+import type { Attachment } from "ai";
+import { type ChangeEvent, memo, useCallback, useState } from "react";
 import { toast } from "sonner";
 
 function PureDocumentHeader() {

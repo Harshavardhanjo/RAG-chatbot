@@ -1,6 +1,4 @@
 "use client";
-
-import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useWindowSize } from "usehooks-ts";
 import { memo, useState, useEffect } from "react";
@@ -8,10 +6,10 @@ import { memo, useState, useEffect } from "react";
 import { ModelSelector } from "@/components/model-selector";
 import { SidebarToggle } from "@/components/sidebar-toggle";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, VercelIcon } from "./icons";
+import { PlusIcon, } from "./icons";
 import { useSidebar } from "./ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { VisibilityType, VisibilitySelector } from "./visibility-selector";
+import type { VisibilityType, } from "./visibility-selector";
 import { KnowledgeGraph } from "./knowledge-graph";
 import { KnowledgeBase } from "./knowledge-base";
 

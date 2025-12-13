@@ -1,10 +1,9 @@
-import { put } from "@vercel/blob";
+
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { auth } from "@/app/(auth)/auth";
 import { analyzePDFDocument, createFile, updateFileStatus } from "@/lib/db/queries";
-import { user } from "@/lib/db/schema";
 
 // Use Blob instead of File since File is not available in Node.js environment
 const FileSchema = z.object({
@@ -82,8 +81,12 @@ export async function POST(request: Request) {
             async start(controller) {
                 const encoder = new TextEncoder();
                 
-                const sendProgress = (step: string) => {
-                    controller.enqueue(encoder.encode(JSON.stringify({ status: 'progress', message: step }) + '\n'));
+                const sendProgress = (step: any) => {
+                    if (typeof step === 'string') {
+                         controller.enqueue(encoder.encode(`${JSON.stringify({ status: 'progress', message: step })}\n`));
+                    } else {
+                         controller.enqueue(encoder.encode(`${JSON.stringify(step)}\n`));
+                    }
                 };
 
                 try {
@@ -94,10 +97,10 @@ export async function POST(request: Request) {
                         await updateFileStatus(newFile[0].id, "processed");
                     }
                     
-                    controller.enqueue(encoder.encode(JSON.stringify({ status: 'complete', file: newFile[0] }) + '\n'));
+                    controller.enqueue(encoder.encode(`${JSON.stringify({ status: 'complete', file: newFile[0] })}\n`));
                     controller.close();
                 } catch (e) {
-                     controller.enqueue(encoder.encode(JSON.stringify({ status: 'error', message: 'Processing failed' }) + '\n'));
+                     controller.enqueue(encoder.encode(`${JSON.stringify({ status: 'error', message: 'Processing failed' })}\n`));
                      controller.close();
                 }
             }

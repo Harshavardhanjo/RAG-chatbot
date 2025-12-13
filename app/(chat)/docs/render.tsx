@@ -9,11 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FileDocument } from "@/lib/db/schema";
+import type { FileDocument } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
-import { Link, FileText } from "lucide-react";
-import { User } from "next-auth";
-import { useState, useEffect, Dispatch, SetStateAction } from "react";
+import { FileText } from "lucide-react";
+import type { User } from "next-auth";
+import { useState, useEffect, type Dispatch, type SetStateAction } from "react";
 import { toast } from "sonner";
 
 type DocumentCardProps = {

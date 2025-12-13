@@ -5,7 +5,7 @@ import { html } from '@codemirror/lang-html';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup } from 'codemirror';
 import React, { memo, useEffect, useRef, useState } from 'react';
-import { Suggestion } from '@/lib/db/schema';
+import type { Suggestion } from '@/lib/db/schema';
 import { Button } from './ui/button';
 import { EyeIcon, CodeIcon } from 'lucide-react';
 

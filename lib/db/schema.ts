@@ -13,12 +13,13 @@ import {
   vector,
 } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-zod";
-import { z } from "zod";
+import type { z } from "zod";
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   email: varchar("email", { length: 64 }).notNull(),
   password: varchar("password", { length: 64 }),
+  plan: varchar("plan", { enum: ["free", "pro"] }).notNull().default("free"),
 });
 
 export type User = InferSelectModel<typeof user>;

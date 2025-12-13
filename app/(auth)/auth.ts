@@ -26,7 +26,11 @@ export const {
         // biome-ignore lint: Forbidden non-null assertion.
         const passwordsMatch = await compare(password, users[0].password!);
         if (!passwordsMatch) return null;
-        return users[0] as any;
+        if (!passwordsMatch) return null;
+        return {
+          ...users[0],
+          plan: users[0].plan,
+        } as any;
       },
     }),
   ],
@@ -34,6 +38,7 @@ export const {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.plan = (user as User).plan;
       }
 
       return token;
@@ -47,6 +52,7 @@ export const {
     }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.plan = token.plan as "free" | "pro";
       }
 
       return session;

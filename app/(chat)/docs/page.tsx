@@ -8,7 +8,6 @@ import { Separator } from "@/components/ui/separator";
 import {
   PageHeader,
   PageHeaderHeading,
-  PageHeaderDescription,
 } from "./page-header";
 
 export default async function Page() {
@@ -39,7 +38,7 @@ export default async function Page() {
 
         <Separator className="my-6" />
 
-        {session && session.user ? (
+        {session?.user ? (
           <div className="grid gap-6">
             <RenderFiles user={session.user} />
           </div>

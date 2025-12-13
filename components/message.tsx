@@ -3,7 +3,7 @@
 import type { ChatRequestOptions, Message } from 'ai';
 import cx from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
-import { memo, useMemo, useState } from 'react';
+import { memo, useState } from 'react';
 
 import type { Vote } from '@/lib/db/schema';
 
@@ -20,6 +20,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 
+import { ResearchProcess } from './research-process';
+
 const PurePreviewMessage = ({
   chatId,
   message,
@@ -28,6 +30,7 @@ const PurePreviewMessage = ({
   setMessages,
   reload,
   isReadonly,
+  data,
 }: {
   chatId: string;
   message: Message;
@@ -40,8 +43,17 @@ const PurePreviewMessage = ({
     chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
   isReadonly: boolean;
+  data?: any[];
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
+  
+  // Check for persisted research log in annotations
+  const researchLogAnnotation = message.annotations?.find(
+    (a: any) => a.type === 'research-log'
+  );
+  
+  // Use either live data (if loading this message) or persisted annotation
+  const researchData = (researchLogAnnotation as any)?.content || data;
 
   return (
     <AnimatePresence>
@@ -106,6 +118,10 @@ const PurePreviewMessage = ({
                   })}
                 >
                   <Markdown>{message.content as string}</Markdown>
+                  
+                  {message.role === 'assistant' && (
+                      <ResearchProcess data={researchData} />
+                  )}
                 </div>
               </div>
             )}
